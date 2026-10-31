@@ -1,0 +1,20 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+ <modelVersion>4.0.0</modelVersion>
+ <groupId>com.acme.ecommerce</groupId><artifactId>ecommerce-platform</artifactId><version>1.0.0</version><packaging>pom</packaging>
+ <parent><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-parent</artifactId><version>3.5.14</version><relativePath/></parent>
+ <modules><module>ecommerce-common</module><module>order-service</module><module>stock-service</module><module>payment-service</module></modules>
+ <!-- Keep this pair together: Seata 2.6.0 needs the pre-5.2 producer constructor;
+      RocketMQ Spring 2.3.6 calls namespaceV2 APIs absent from that client. -->
+ <properties><java.version>21</java.version><maven.compiler.release>21</maven.compiler.release><rocketmq.version>5.1.4</rocketmq.version><rocketmq-spring.version>2.3.0</rocketmq-spring.version></properties>
+ <dependencyManagement><dependencies>
+  <dependency><groupId>org.apache.rocketmq</groupId><artifactId>rocketmq-client</artifactId><version>${rocketmq.version}</version></dependency>
+  <dependency><groupId>org.apache.rocketmq</groupId><artifactId>rocketmq-common</artifactId><version>${rocketmq.version}</version></dependency>
+  <dependency><groupId>org.apache.rocketmq</groupId><artifactId>rocketmq-remoting</artifactId><version>${rocketmq.version}</version></dependency>
+  <dependency><groupId>org.apache.rocketmq</groupId><artifactId>rocketmq-acl</artifactId><version>${rocketmq.version}</version></dependency>
+  <dependency><groupId>com.acme.ecommerce</groupId><artifactId>ecommerce-common</artifactId><version>${project.version}</version></dependency>
+ </dependencies></dependencyManagement>
+ <build><pluginManagement><plugins><plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId></plugin></plugins></pluginManagement></build>
+<profiles><profile><id>at-it</id><modules><module>integration-tests</module></modules></profile></profiles></project>
+
+

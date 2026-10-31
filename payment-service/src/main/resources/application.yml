@@ -1,0 +1,62 @@
+server:
+  port: ${SERVER_PORT:8083}
+  shutdown: graceful
+spring:
+  application:
+    name: payment-service
+  datasource:
+    url: ${DB_URL:jdbc:mysql://rm-bp1jgx505v6h9927f.mysql.rds.aliyuncs.com:3306/payment_db?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&useAffectedRows=true}
+    username: ${DB_USER:qiuguo_test}
+    password: ${DB_PASSWORD:heMntYjSC3GArYe3hCWGvEEF}
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX:20}
+      connection-timeout: 2000
+  sql:
+    init:
+      mode: never
+      schema-locations: classpath:db/schema-mysql.sql
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+seata:
+  enabled: false
+  application-id: payment-service
+  tx-service-group: ecommerce_tx_group
+  enable-auto-data-source-proxy: false
+  data-source-proxy-mode: AT
+  registry:
+    type: file
+  config:
+    type: file
+  service:
+    vgroup-mapping:
+      ecommerce_tx_group: default
+    grouplist:
+      default: ${SEATA_SERVER:127.0.0.1:8091}
+rocketmq:
+  name-server: ${ROCKETMQ_NAMESRV:172.24.219.0:9876}
+  producer:
+    group: payment-service-local-tx-producer
+    send-message-timeout: 3000
+    retry-times-when-send-failed: 2
+messaging:
+  topic: ECOMMERCE_TRADING_TX
+  enabled: true
+workers:
+  enabled: true
+internal:
+  token: ${INTERNAL_SERVICE_TOKEN:token}
+stock:
+  base-url: ${STOCK_BASE_URL:http://localhost:8082}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+
+dlq:
+  capture-group: payment-service-events
+
+
+

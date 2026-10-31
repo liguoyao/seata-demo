@@ -1,0 +1,12 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"><modelVersion>4.0.0</modelVersion>
+<parent><groupId>com.acme.ecommerce</groupId><artifactId>ecommerce-platform</artifactId><version>1.0.0</version></parent>
+<artifactId>ecommerce-common</artifactId><dependencies>
+<dependency><groupId>com.baomidou</groupId><artifactId>mybatis-plus-spring-boot3-starter</artifactId><version>3.5.17</version></dependency>
+<dependency><groupId>org.apache.seata</groupId><artifactId>seata-spring-boot-starter</artifactId><version>2.6.0</version></dependency>
+<dependency><groupId>org.apache.rocketmq</groupId><artifactId>rocketmq-spring-boot-starter</artifactId><version>${rocketmq-spring.version}</version></dependency>
+<dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
+<dependency><groupId>com.fasterxml.jackson.datatype</groupId><artifactId>jackson-datatype-jsr310</artifactId></dependency>
+<dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-test</artifactId><scope>test</scope></dependency>
+<dependency><groupId>com.h2database</groupId><artifactId>h2</artifactId><scope>test</scope></dependency>
+</dependencies></project>
+
