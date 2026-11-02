@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 
 /**
  * Mock 渠道网关：模拟支付渠道，全部操作直接返回成功，不抛异常。
@@ -48,6 +49,9 @@ public class MockPaymentChannelGateway implements PaymentChannelGateway {
         if (p == null) {
             log.warn("[MOCK] channel query: paymentNo={} not found", paymentNo);
             return new QueryResult(State.NOT_FOUND, "MOCK", "MOCK", paymentNo, null, null, null);
+        }
+        if (Instant.now().isBefore(p.createdAt.plusSeconds(5))) {
+            return new QueryResult(State.UNPAID, p.channelCode, p.merchantId, p.paymentNo, null, p.amount, p.currency);
         }
         log.info("[MOCK] channel query: paymentNo={} -> PAID", paymentNo);
         return new QueryResult(State.PAID, p.channelCode, p.merchantId, p.paymentNo, "MOCK" + paymentNo, p.amount,
