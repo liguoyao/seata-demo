@@ -93,5 +93,43 @@ mvn -Pat-it verify
 
 `at-it` 独立模块启动订单和库存的实际 HTTP 服务，验证 XID 传播、双分支提交，远端库存分支提交后发生价格错误时的全局回滚，以及半消息已发送后异常导致数据库与消息共同回滚。该测试依赖真实 MySQL、TC 与 Broker，不能用 H2 测试结果代替。进一步的 TC 宕机、Broker 掉电、跨进程租约暂停及主备切换演练见 `docs/production-checklist.md`。
 
+`OrderFlow` 以订单状态为中心，接收支付和库存事件，再决定更新订单状态以及发送下一条命令。正常完成、超时取消、退款补偿是三条主要路径。
+
+```mermaid
+flowchart TD
+    A["PAYMENT_PREPARING<br/>准备支付"] -->|PAYMENT_CREATED| B["WAITING_PAYMENT<br/>等待支付"]
+    A -->|PAYMENT_SUCCEEDED| C["PAID_PENDING_STOCK_CONFIRM<br/>已支付，等待确认库存"]
+    B -->|PAYMENT_SUCCEEDED| C
+    C -->|STOCK_CONFIRMED| D["COMPLETED<br/>订单完成"]
+
+    A -->|到期取消| E["CANCEL_REQUESTED<br/>请求关闭支付"]
+    B -->|到期取消| E
+    E -->|PAYMENT_SUCCEEDED| C
+    E -->|PAYMENT_CLOSE_CONFIRMED| F["CANCEL_PENDING_STOCK_RELEASE<br/>等待释放库存"]
+    F -->|STOCK_RELEASED| G["CANCELLED<br/>订单已取消"]
+
+    F -->|PAYMENT_SUCCEEDED| H["REFUND_REQUIRED<br/>需要退款"]
+    G -->|迟到的 PAYMENT_SUCCEEDED| H
+    C -->|STOCK_CONFIRM_FAILED| H
+    H -->|退款完成且库存已释放| I["REFUNDED<br/>退款补偿完成"]
+```
+
+| 当前订单状态 | 输入事件或条件 | 订单服务处理 | 发往其他服务 |
+|---|---|---|---|
+| `PAYMENT_PREPARING` | `PAYMENT_CREATED` | 更新为 `WAITING_PAYMENT` | — |
+| `PAYMENT_PREPARING`、`WAITING_PAYMENT` | 收到 `PAYMENT_SUCCEEDED` | 校验支付号、金额和币种；更新为 `PAID_PENDING_STOCK_CONFIRM` | 向库存服务发送 `STOCK_CONFIRM_REQUESTED` |
+| `PAID_PENDING_STOCK_CONFIRM` | `STOCK_CONFIRMED` | 更新为 `COMPLETED`；Saga 标记 `SUCCEEDED` | — |
+| `PAYMENT_PREPARING`、`WAITING_PAYMENT` | 支付到期，触发取消或恢复 | 更新为 `CANCEL_REQUESTED` | 向支付服务发送 `PAYMENT_CLOSE_REQUESTED` |
+| `CANCEL_REQUESTED` | `PAYMENT_SUCCEEDED` | 支付先于关单确认成功，转为 `PAID_PENDING_STOCK_CONFIRM` | 向库存服务发送 `STOCK_CONFIRM_REQUESTED` |
+| `CANCEL_REQUESTED` | `PAYMENT_CLOSE_CONFIRMED` | 更新为 `CANCEL_PENDING_STOCK_RELEASE` | 向库存服务发送 `STOCK_RELEASE_REQUESTED` |
+| `CANCEL_PENDING_STOCK_RELEASE` | `STOCK_RELEASED` | 更新为 `CANCELLED`；Saga 标记 `COMPENSATED` | — |
+| `PAID_PENDING_STOCK_CONFIRM` | `STOCK_CONFIRM_FAILED` | 更新为 `REFUND_REQUIRED`，标记库存已释放 | 向支付服务发送 `REFUND_REQUESTED` |
+| `CANCEL_PENDING_STOCK_RELEASE`、`CANCELLED` | 迟到的 `PAYMENT_SUCCEEDED` | 更新为 `REFUND_REQUIRED` | 向支付服务发送 `REFUND_REQUESTED` |
+| `REFUND_REQUIRED` | `REFUND_SUCCEEDED` 或 `STOCK_RELEASED` | 分别记录退款完成、库存释放；**两者都完成**后更新为 `REFUNDED`，Saga 标记 `COMPENSATED` | 未完成的步骤由恢复任务重试 |
+
+主要代码在 [OrderFlow.applyConsume()](E:/code/seata-demo/order-service/src/main/java/com/acme/ecommerce/order/OrderFlow.java:159)。事件由订单服务消费者接收后进入这里；处理前通过 Inbox 去重，库存、支付和退款事件还会校验对应业务数据。
+
+[OrderFlow.applyRecover()](E:/code/seata-demo/order-service/src/main/java/com/acme/ecommerce/order/OrderFlow.java:255) 负责恢复卡住的流程：根据当前订单状态重新发送支付创建、关单、库存确认、释放或退款命令。重试达到 100 次后，Saga 标记为 `ATTENTION_REQUIRED`，但仍保留后续恢复能力。
+
 
 

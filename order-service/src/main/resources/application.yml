@@ -5,9 +5,9 @@ spring:
   application:
     name: order-service
   datasource:
-    url: ${DB_URL:jdbc:mysql://rm-bp1jgx505v6h9927f.mysql.rds.aliyuncs.com:3306/order_db?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&useAffectedRows=true}
-    username: ${DB_USER:qiuguo_test}
-    password: ${DB_PASSWORD:heMntYjSC3GArYe3hCWGvEEF}
+    url: ${DB_URL:jdbc:mysql://10.11.2.102:3306/order_db?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&useAffectedRows=true}
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:Qgjh@2024}
     hikari:
       maximum-pool-size: ${DB_POOL_MAX:20}
       connection-timeout: 2000
@@ -25,20 +25,14 @@ seata:
   enable-auto-data-source-proxy: true
   data-source-proxy-mode: AT
   registry:
-    type: seata
-    seata:
-      server-addr: 127.0.0.1:8081
-      namespace: public
-      heartbeat-period: 5000
-      username: seata
-      password: seata
+    type: file
   config:
     type: file
   service:
     vgroup-mapping:
       ecommerce_tx_group: default
-#    grouplist:
-#      default: ${SEATA_SERVER:127.0.0.1:8091}
+    grouplist:
+      default: ${SEATA_SERVER:127.0.0.1:8091}
 rocketmq:
   name-server: ${ROCKETMQ_NAMESRV:172.24.219.0:9876}
   producer:

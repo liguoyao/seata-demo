@@ -55,7 +55,7 @@ public class LocalMessageTransactions {
             var work = new LocalMessageWork(batch, Hashing.sha256(payload), action);
             try {
                 var state = transport.send(
-                    MessageBuilder.withPayload(payload).setHeader("KEYS", plan.get(0).aggregateId())
+                    MessageBuilder.withPayload(payload).setHeader("KEYS", plan.getFirst().aggregateId())
                         .setHeader("transactionId", batch.transactionId()).build(), work);
                 if (work.failure instanceof BusinessEvents.PlanChanged) {
                     continue;
