@@ -7,6 +7,7 @@
     </parent>
     <artifactId>payment-service</artifactId>
     <dependencies>
+<dependency><groupId>io.micrometer</groupId><artifactId>micrometer-registry-prometheus</artifactId></dependency>
         <dependency>
             <groupId>com.acme.ecommerce</groupId>
             <artifactId>ecommerce-common</artifactId>

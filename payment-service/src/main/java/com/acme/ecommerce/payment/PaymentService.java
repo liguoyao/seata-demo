@@ -24,8 +24,7 @@ import java.util.UUID;
 public class PaymentService {
     private EventEnvelope planned(String type, PaymentOrder p) {
         return emitted.event(type, p.orderNo,
-            Map.of("orderNo", p.orderNo, "paymentNo", p.paymentNo, "amount", p.amount.toPlainString(), "currency",
-                p.currency));
+            payload(type, p));
     }
 
     private java.util.List<EventEnvelope> planConsume(EventEnvelope e) {
@@ -394,7 +393,7 @@ public class PaymentService {
             throw new IllegalStateException("PAYMENT_VERSION_CONFLICT");
         }
         op.status = done ? "DONE" : "UNKNOWN";
-        op.nextRetryTime = clock.instant().plusSeconds(30);
+        op.nextRetryTime = clock.instant().plusSeconds(java.util.concurrent.ThreadLocalRandom.current().nextLong(15, 46));
         op.updatedAt = clock.instant();
         operations.updateById(op);
     }
@@ -418,9 +417,15 @@ public class PaymentService {
             claimed.leaseToken);
     }
 
+    private Map<String,Object> payload(String type, PaymentOrder p) {
+        var data = new java.util.HashMap<String,Object>();
+        data.put("orderNo",p.orderNo); data.put("paymentNo",p.paymentNo);
+        data.put("amount",p.amount.toPlainString()); data.put("currency",p.currency);
+        if (Topics.REFUND_SUCCEEDED.equals(type)) data.put("refundNo","R"+p.orderNo);
+        return data;
+    }
     private void emit(String type, PaymentOrder p) {
         emitted.append(type, p.orderNo,
-            Map.of("orderNo", p.orderNo, "paymentNo", p.paymentNo, "amount", p.amount.toPlainString(), "currency",
-                p.currency));
+            payload(type, p));
     }
 }

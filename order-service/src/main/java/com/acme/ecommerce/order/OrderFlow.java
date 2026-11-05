@@ -164,6 +164,13 @@ public class OrderFlow {
         if (!inbox.firstDelivery("order-service-events", e)) {
             return;
         }
+        if (Set.of(Topics.STOCK_CONFIRMED,Topics.STOCK_RELEASED,Topics.STOCK_CONFIRM_FAILED).contains(e.eventType())) {
+            if (!o.orderNo.equals(e.data().get("reservationNo"))
+                || !o.orderNo.equals(e.data().get("orderNo"))
+                || !String.valueOf(o.skuId).equals(String.valueOf(e.data().get("skuId")))
+                || !String.valueOf(o.quantity).equals(String.valueOf(e.data().get("quantity"))))
+                throw new IllegalArgumentException("STOCK_FACT_MISMATCH");
+        }
         var s = sagas.selectById(o.orderNo);
         switch (e.eventType()) {
             case Topics.PAYMENT_CREATED -> {
@@ -219,6 +226,13 @@ public class OrderFlow {
                 }
             }
             case Topics.REFUND_SUCCEEDED -> {
+                if (!("R" + o.orderNo).equals(e.data().get("refundNo"))) throw new IllegalArgumentException("REFUND_ID_MISMATCH");
+                if (!("P" + o.orderNo).equals(e.data().get("paymentNo"))
+                    || !o.currency.equals(e.data().get("currency"))
+                    || e.data().get("amount") == null
+                    || o.amount.compareTo(new java.math.BigDecimal(e.data().get("amount").toString())) != 0) {
+                    throw new IllegalArgumentException("REFUND_FACT_MISMATCH");
+                }
                 if ("REFUND_REQUIRED".equals(o.status)) {
                     s.refundCompleted = true;
                 }
@@ -289,3 +303,4 @@ public class OrderFlow {
                 o.currency));
     }
 }
+

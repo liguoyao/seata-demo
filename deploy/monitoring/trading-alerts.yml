@@ -1,0 +1,18 @@
+groups:
+  - name: trading
+    rules:
+      - alert: ReconciliationDifference
+        expr: trading_reconciliation_open > 0
+        for: 5m
+        labels: {severity: critical}
+        annotations: {summary: "Unresolved payment reconciliation differences"}
+      - alert: ChannelUnresolved
+        expr: trading_channel_unresolved > 0
+        for: 5m
+        labels: {severity: critical}
+        annotations: {summary: "Payment operations unresolved over five minutes"}
+      - alert: TradingScrapeFailed
+        expr: up{job=~".*service"} == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations: {summary: "Trading service metrics unavailable"}

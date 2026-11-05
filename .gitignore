@@ -4,5 +4,4 @@ db/
 .idea/
 *.log
 .workbuddy/
-deploy
 **/test

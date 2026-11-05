@@ -23,14 +23,18 @@ public class StockService {
           emitted.event(
               Topics.STOCK_CONFIRM_FAILED,
               e.aggregateId(),
-              Map.of("orderNo", e.aggregateId(), "reason", "ALREADY_RELEASED")));
+              fact(r, "ALREADY_RELEASED")));
     return java.util.List.of(
         emitted.event(
             Topics.STOCK_CONFIRM_REQUESTED.equals(e.eventType())
                 ? Topics.STOCK_CONFIRMED
                 : Topics.STOCK_RELEASED,
             e.aggregateId(),
-            Map.of("orderNo", e.aggregateId())));
+            fact(r, "")));
+  }
+
+  private Map<String,Object> fact(StockReservation r, String reason) {
+    return Map.of("orderNo",r.orderNo,"reservationNo",r.orderNo,"skuId",r.skuId,"quantity",r.quantity,"reason",reason);
   }
 
   public void consume(EventEnvelope e) {
@@ -128,7 +132,7 @@ public class StockService {
       emitted.append(
           Topics.STOCK_CONFIRM_FAILED,
           e.aggregateId(),
-          Map.of("orderNo", e.aggregateId(), "reason", "ALREADY_RELEASED"));
+          fact(r, "ALREADY_RELEASED"));
       inbox.complete("stock-service-events", e.eventId());
       return;
     }
@@ -158,7 +162,7 @@ public class StockService {
     emitted.append(
         confirm ? Topics.STOCK_CONFIRMED : Topics.STOCK_RELEASED,
         e.aggregateId(),
-        Map.of("orderNo", e.aggregateId()));
+        fact(r, ""));
     inbox.complete("stock-service-events", e.eventId());
   }
 }

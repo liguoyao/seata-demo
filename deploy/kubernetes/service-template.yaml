@@ -1,0 +1,58 @@
+# Replace APP_NAME and IMAGE before applying. Infrastructure endpoints come from trading-config.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: APP_NAME
+spec:
+  replicas: 3
+  selector:
+    matchLabels: {app: APP_NAME}
+  strategy:
+    rollingUpdate: {maxUnavailable: 0, maxSurge: 1}
+  template:
+    metadata:
+      labels: {app: APP_NAME}
+    spec:
+      terminationGracePeriodSeconds: 60
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels: {app: APP_NAME}
+      containers:
+        - name: application
+          image: IMAGE
+          ports: [{containerPort: 8080}]
+          envFrom:
+            - configMapRef: {name: trading-config}
+            - secretRef: {name: APP_NAME-secrets}
+          env:
+            - {name: SERVER_PORT, value: "8080"}
+            - {name: MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED, value: "true"}
+          resources:
+            requests: {cpu: "500m", memory: "512Mi"}
+            limits: {cpu: "2", memory: "1Gi"}
+          startupProbe:
+            httpGet: {path: /actuator/health/liveness, port: 8080}
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet: {path: /actuator/health/readiness, port: 8080}
+          livenessProbe:
+            httpGet: {path: /actuator/health/liveness, port: 8080}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: {name: APP_NAME}
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels: {app: APP_NAME}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: APP_NAME}
+spec:
+  selector: {app: APP_NAME}
+  ports: [{port: 8080, targetPort: 8080}]
