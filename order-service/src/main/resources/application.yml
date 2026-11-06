@@ -25,14 +25,20 @@ seata:
   enable-auto-data-source-proxy: true
   data-source-proxy-mode: AT
   registry:
-    type: file
+    type: seata
+    seata:
+      server-addr: 10.11.2.102:8081   ##第一步配置的namingserver的ip+端口，若有多个namingserver节点则用逗号分割
+      namespace: public  ##命名空间
+      heartbeat-period: 5000  ##心跳时间
+      username: seata
+      password: seata
   config:
     type: file
   service:
     vgroup-mapping:
       ecommerce_tx_group: default
-    grouplist:
-      default: ${SEATA_SERVER:127.0.0.1:8091}
+#    grouplist:
+#      default: ${SEATA_SERVER:127.0.0.1:8091}
 rocketmq:
   name-server: ${ROCKETMQ_NAMESRV:172.24.219.0:9876}
   producer:
